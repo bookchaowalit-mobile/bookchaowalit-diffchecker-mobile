@@ -26,6 +26,7 @@ Score: 7.5/10 — LCS line diff with prefix/suffix trimming, edge-case tests, re
 - Bug fix: lone `\r` (classic Mac) line endings were not split, so such text was one giant line.
 - Accessibility: diff rows are announced as "Added/Removed/Unchanged: …" ("blank line" for empty rows) instead of enum names; summary and error are live regions.
 - Edge-case unit tests: large files with small edits, cap on a large changed section, CR endings, blank/whitespace-only lines, trimming with ignoreWhitespace, repeated and unicode lines, empty sides. Widget tests: whitespace toggle, oversized-section error state, semantics labels, a11y guidelines, 200% text scale.
+- The 200% text-scale widget test now runs at a 360 px phone width (it previously used the 800 px default test surface); no overflow found.
 
 ## Done in pass 2
 
