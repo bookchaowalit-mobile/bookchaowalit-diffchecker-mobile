@@ -41,7 +41,9 @@ const maxDiffLines = 2000;
 
 List<String> splitLines(String text) {
   if (text.isEmpty) return const [];
-  final lines = text.replaceAll('\r\n', '\n').split('\n');
+  // CRLF (Windows) and lone CR (classic Mac) both end a line.
+  final lines =
+      text.replaceAll('\r\n', '\n').replaceAll('\r', '\n').split('\n');
   if (lines.isNotEmpty && lines.last.isEmpty) lines.removeLast();
   return lines;
 }
@@ -51,19 +53,40 @@ String _normalise(String line) => line.trim().replaceAll(RegExp(r'\s+'), ' ');
 /// Diffs [left] against [right]. Removed lines come before added lines at the
 /// same position. When [ignoreWhitespace] is set, lines that differ only in
 /// whitespace count as unchanged (the right-hand text is shown).
-/// Throws [ArgumentError] when either side exceeds [maxDiffLines].
+/// Lines shared at the start and end are matched directly, so the limit only
+/// applies to the changed middle section.
+/// Throws [ArgumentError] when that section exceeds [maxDiffLines] on either
+/// side.
 List<DiffLine> diffLines(
   String left,
   String right, {
   bool ignoreWhitespace = false,
 }) {
-  final a = splitLines(left);
-  final b = splitLines(right);
-  if (a.length > maxDiffLines || b.length > maxDiffLines) {
-    throw ArgumentError('Each side is limited to $maxDiffLines lines');
+  final allA = splitLines(left);
+  final allB = splitLines(right);
+  final allKa = ignoreWhitespace ? allA.map(_normalise).toList() : allA;
+  final allKb = ignoreWhitespace ? allB.map(_normalise).toList() : allB;
+  var start = 0;
+  while (start < allA.length &&
+      start < allB.length &&
+      allKa[start] == allKb[start]) {
+    start++;
   }
-  final ka = ignoreWhitespace ? a.map(_normalise).toList() : a;
-  final kb = ignoreWhitespace ? b.map(_normalise).toList() : b;
+  var endA = allA.length;
+  var endB = allB.length;
+  while (endA > start && endB > start && allKa[endA - 1] == allKb[endB - 1]) {
+    endA--;
+    endB--;
+  }
+  final a = allA.sublist(start, endA);
+  final b = allB.sublist(start, endB);
+  if (a.length > maxDiffLines || b.length > maxDiffLines) {
+    throw ArgumentError(
+      'The changed section is limited to $maxDiffLines lines per side',
+    );
+  }
+  final ka = allKa.sublist(start, endA);
+  final kb = allKb.sublist(start, endB);
   final n = a.length;
   final m = b.length;
   // lcs[i][j] = LCS length of a[i..] and b[j..].
@@ -75,7 +98,9 @@ List<DiffLine> diffLines(
           : (lcs[i + 1][j] >= lcs[i][j + 1] ? lcs[i + 1][j] : lcs[i][j + 1]);
     }
   }
-  final out = <DiffLine>[];
+  final out = <DiffLine>[
+    for (var k = 0; k < start; k++) DiffLine(DiffOp.same, allB[k]),
+  ];
   var i = 0;
   var j = 0;
   while (i < n && j < m) {
@@ -94,6 +119,9 @@ List<DiffLine> diffLines(
   }
   while (j < m) {
     out.add(DiffLine(DiffOp.added, b[j++]));
+  }
+  for (var k = endB; k < allB.length; k++) {
+    out.add(DiffLine(DiffOp.same, allB[k]));
   }
   return out;
 }

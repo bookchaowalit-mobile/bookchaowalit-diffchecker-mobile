@@ -2,7 +2,7 @@
 
 ## Current state
 
-Score: 7/10 — core feature with tested pure-Dart logic, honest CI and fail-closed release signing; still no app icon or E2E flow.
+Score: 7.5/10 — LCS line diff with prefix/suffix trimming, edge-case tests, readable semantics, a11y guideline tests and fail-closed signing; no intra-line diff, icon or E2E flow yet.
 
 ## Backlog
 
@@ -17,10 +17,17 @@ Score: 7/10 — core feature with tested pure-Dart logic, honest CI and fail-clo
 - Add a CI job that builds a signed release bundle from repository secrets (keystore decoded at runtime, never committed).
 
 ### P2
-- Tablet layout (NavigationRail) and 130% text-scale widget test.
+- Tablet layout (NavigationRail).
 - Localisation (Thai/English) for UI strings.
 
-## Done in this pass (pass 2)
+## Done in this pass (pass 3)
+
+- Improvement: identical leading/trailing lines are matched before the O(n·m) LCS table, so the 2000-line cap now applies only to the changed middle section — two 6000-line files with a one-line edit diff fine instead of erroring (and large diffs are faster).
+- Bug fix: lone `\r` (classic Mac) line endings were not split, so such text was one giant line.
+- Accessibility: diff rows are announced as "Added/Removed/Unchanged: …" ("blank line" for empty rows) instead of enum names; summary and error are live regions.
+- Edge-case unit tests: large files with small edits, cap on a large changed section, CR endings, blank/whitespace-only lines, trimming with ignoreWhitespace, repeated and unicode lines, empty sides. Widget tests: whitespace toggle, oversized-section error state, semantics labels, a11y guidelines, 200% text scale.
+
+## Done in pass 2
 
 - Release builds no longer sign with the debug key: `android/app/build.gradle.kts` reads the ignored `android/key.properties` and a Gradle guard fails any release assemble/bundle without it (pattern from `bookchaowalit-goal-tracker-mobile`). Root `.gitignore` also ignores `key.properties`, `*.jks`, `*.keystore`; README documents the setup. Not build-verified here (no Android SDK/Gradle in this environment).
 

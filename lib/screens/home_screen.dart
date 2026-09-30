@@ -65,14 +65,25 @@ class _HomeScreenState extends State<HomeScreen> {
             value: _ignoreWhitespace,
             onChanged: (v) => setState(() => _ignoreWhitespace = v),
           ),
-          if (error != null) Text(error, style: TextStyle(color: colors.error)),
+          if (error != null)
+            Semantics(
+              liveRegion: true,
+              child: Text(
+                error,
+                key: const Key('diff-error'),
+                style: TextStyle(color: colors.error),
+              ),
+            ),
           if (summary != null)
-            Text(
-              summary.identical
-                  ? 'No differences'
-                  : '+${summary.added} added, -${summary.removed} removed',
-              key: const Key('diff-summary'),
-              style: Theme.of(context).textTheme.titleMedium,
+            Semantics(
+              liveRegion: true,
+              child: Text(
+                summary.identical
+                    ? 'No differences'
+                    : '+${summary.added} added, -${summary.removed} removed',
+                key: const Key('diff-summary'),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
             ),
           const SizedBox(height: 8),
           for (final d in diff ?? const <DiffLine>[])
@@ -85,7 +96,11 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               child: Text(
                 d.toString(),
-                semanticsLabel: '${d.op.name}: ${d.text}',
+                semanticsLabel: '${switch (d.op) {
+                  DiffOp.added => 'Added',
+                  DiffOp.removed => 'Removed',
+                  DiffOp.same => 'Unchanged',
+                }}: ${d.text.isEmpty ? 'blank line' : d.text}',
                 style: const TextStyle(fontFamily: 'monospace'),
               ),
             ),
